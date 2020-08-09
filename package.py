@@ -1,4 +1,6 @@
+
 early = globals()["early"]  # lint helper
+
 
 name = "Qt.py"
 
@@ -8,11 +10,23 @@ description = "Minimal Python 2 & 3 shim around all Qt bindings - " \
               "PySide, PySide2, PyQt4 and PyQt5."
 
 
+def __rmtree(path):
+    import os
+    import stat
+    import shutil
+
+    # handling read-only files in .git
+    def del_rw(action, name, exc):
+        os.chmod(name, stat.S_IWRITE)
+        os.remove(name)
+
+    shutil.rmtree(path, onerror=del_rw)
+
+
 @early()
 def __payload():
     import os
     import json
-    import shutil
     import tempfile
     from subprocess import check_output, CalledProcessError
 
@@ -35,11 +49,10 @@ def __payload():
         check_output(["git", "checkout", tag], cwd=tempdir)
 
     except CalledProcessError:
-        shutil.rmtree(tmpdir)
+        __rmtree(tempdir)
         raise
 
     data = {
-        "temp": tmpdir,
         "repo": tempdir,
         "tag": tag,
     }
@@ -74,7 +87,6 @@ def authors():
 @early()
 def variants():
     import os
-    import shutil
     from rez import packages
 
     bindings = [
@@ -90,7 +102,7 @@ def variants():
     if not variants_:
         # cleanup
         data = globals()["this"].__payload
-        shutil.rmtree(data["temp"])
+        __rmtree(data["repo"])
 
         raise Exception("No Qt binding package found.")
 

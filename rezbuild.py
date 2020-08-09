@@ -3,6 +3,19 @@ import os
 import sys
 
 
+def __rmtree(path):
+    import os
+    import stat
+    import shutil
+
+    # handling read-only files in .git
+    def del_rw(action, name, exc):
+        os.chmod(name, stat.S_IWRITE)
+        os.remove(name)
+
+    shutil.rmtree(path, onerror=del_rw)
+
+
 def build(source_path, build_path, install_path, targets=None):
     import json
     import shutil
@@ -17,7 +30,7 @@ def build(source_path, build_path, install_path, targets=None):
     dst = os.path.normpath(dst)
 
     if os.path.isdir(dst):
-        shutil.rmtree(dst)
+        __rmtree(dst)
     os.makedirs(dst)
 
     data = json.loads(os.environ["GIT_CLONED"])
@@ -29,7 +42,7 @@ def build(source_path, build_path, install_path, targets=None):
     last = int(os.environ["REZ_BUILD_VARIANT_COUNT"]) - 1
     if index == last:
         # last one, do cleanup
-        shutil.rmtree(data["temp"])
+        __rmtree(data["repo"])
 
 
 if __name__ == "__main__":
